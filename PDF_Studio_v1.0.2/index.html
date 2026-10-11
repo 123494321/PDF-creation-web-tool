@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Studio - 고품질 PDF 제작 및 스마트 편집 스튜디오</title>
+  <meta name="description" content="100% 브라우저 로컬 구동! 대량 이미지 결합, 삼성노트 호환 보안 해제, 그룹화 분할, 메타데이터 맞춤 설정 웹 툴">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e222d">
+</head>
+<body>
+  <!-- 최상단 헤더 & 액션바 -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-area">
+        <span class="logo-icon">📑</span>
+        <h1 class="logo-title">PDF Studio</h1>
+        <span class="version-badge" id="app-version">v1.0.2</span>
+      </div>
+      <div class="status-pill" id="status-pill">
+        <span class="status-dot"></span>
+        <span class="status-text" id="status-text">준비 완료 (로컬 모드)</span>
+      </div>
+    </div>
+
+    <!-- 중앙 메인 툴바 -->
+    <div class="header-center">
+      <div class="toolbar-group">
+        <input type="file" id="file-input-image" accept="image/*" multiple hidden>
+        <button class="btn btn-primary" id="btn-add-images" title="여러 장의 이미지를 순차적으로 추가합니다">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          <span>이미지 추가</span>
+        </button>
+
+        <input type="file" id="file-input-pdf" accept=".pdf,application/pdf" multiple hidden>
+        <button class="btn btn-secondary" id="btn-add-pdf" title="기존 PDF를 불러와 페이지별로 분해합니다 (보안 PDF 포함)">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          <span>PDF 추가</span>
+        </button>
+
+        <input type="file" id="file-input-cover" accept="image/*" hidden>
+        <button class="btn btn-outline" id="btn-add-cover" title="맨 앞 0번에 전용 표지 이미지를 추가합니다">
+          <span>⭐ 표지 추가</span>
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <!-- 지능형 정렬 드롭다운 -->
+        <div class="dropdown" id="sort-dropdown">
+          <button class="btn btn-ghost dropdown-trigger" id="btn-sort-menu" title="페이지 정렬 방식 선택">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+            <span>정렬</span>
+            <span class="arrow-down">▼</span>
+          </button>
+          <div class="dropdown-content">
+            <button class="dropdown-item" data-action="sort-natural">🔢 파일명 자연어 정렬 (1, 2, ... 10)</button>
+            <button class="dropdown-item" data-action="sort-name-asc">🔤 파일명 오름차순 (A-Z)</button>
+            <button class="dropdown-item" data-action="sort-name-desc">🔡 파일명 내림차순 (Z-A)</button>
+            <button class="dropdown-item" data-action="sort-date-desc">🕒 파일 수정일 (최신순)</button>
+            <button class="dropdown-item" data-action="sort-date-asc">⏳ 파일 수정일 (과거순)</button>
+            <button class="dropdown-item" data-action="sort-reverse">🔄 현재 순서 역순 뒤집기</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost" id="btn-rotate-all" title="전체 페이지 90도 회전">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M7.11 8.53L5.7 7.11C4.8 8.27 4.24 9.61 4.07 11h2.02c.14-.87.49-1.72.97-2.47zM6.09 13H4.07c.17 1.39.72 2.73 1.62 3.89l1.41-1.42c-.52-.75-.87-1.59-1.01-2.47zm1.01 5.32c1.16.9 2.51 1.44 3.9 1.61V17.9c-.87-.15-1.71-.49-2.46-.97L7.1 18.32zM13 4.07V1L8.45 5.55 13 10V6.09c3.37 0 6.09 2.72 6.09 6.09s-2.72 6.09-6.09 6.09v2.02c4.48 0 8.11-3.63 8.11-8.11 0-4.48-3.63-8.02-8.11-8.02z"/></svg>
+          <span>전체 회전</span>
+        </button>
+
+        <button class="btn btn-ghost text-danger" id="btn-delete-all" title="작업대 전체 비우기">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          <span>전체 삭제</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 우측 보조 메뉴 -->
+    <div class="header-right">
+      <button class="btn btn-icon" id="btn-theme-toggle" title="다크/라이트 테마 전환">
+        <span id="theme-icon">🌙</span>
+      </button>
+      <button class="btn btn-icon" id="btn-help" title="도움말 및 기능 안내">
+        <span>❓</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 3단 워크스페이스 -->
+  <div class="app-workspace">
+    <!-- 1단 : 좌측 그룹 관리 사이드바 -->
+    <aside class="sidebar-groups" id="sidebar-groups">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">📁 분할 그룹 관리</h2>
+        <button class="btn btn-sm btn-outline" id="btn-new-group" title="새 분할 그룹을 추가합니다">
+          <span>+ 그룹 추가</span>
+        </button>
+      </div>
+      <div class="sidebar-desc">
+        페이지를 그룹으로 지정하면 각 그룹별 분할 PDF를 한 번에 묶어 저장할 수 있습니다.
+      </div>
+      <ul class="group-list" id="group-list">
+        <!-- 동적으로 그룹 아이템이 렌더링됩니다 -->
+      </ul>
+    </aside>
+
+    <!-- 2단 : 중앙 메인 작업대 (그리드 캔버스) -->
+    <main class="main-canvas" id="main-canvas">
+      <!-- 빈 작업 공간 안내 (Empty State) -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-card">
+          <div class="empty-icon">📂</div>
+          <h2 class="empty-title">작업할 파일들을 이곳에 끌어다 놓으세요</h2>
+          <p class="empty-desc">
+            스캔 이미지(JPG, PNG, WebP)나 기존 PDF 문서를 자유롭게 드래그 앤 드롭하세요.<br>
+            파일 크기나 순서 꼬임 없이 <strong>자연어 순서</strong>로 지능형 정렬됩니다.
+          </p>
+          <div class="empty-actions">
+            <button class="btn btn-primary btn-lg" onclick="document.getElementById('file-input-image').click()">
+              🖼️ 이미지 파일 선택
+            </button>
+            <button class="btn btn-secondary btn-lg" onclick="document.getElementById('file-input-pdf').click()">
+              📑 PDF 파일 선택
+            </button>
+            <button class="btn btn-outline btn-lg" id="btn-demo-sample">
+              ✨ 체험용 샘플 카드 생성
+            </button>
+          </div>
+          <div class="empty-feature-pills">
+            <span class="pill">🔒 100% 로컬 구동 (서버 전송 없음)</span>
+            <span class="pill">⚡ 삼성노트 보안 플래그 자동 해제</span>
+            <span class="pill">📦 그룹별 분할 PDF 일괄 ZIP 저장</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 페이지 카드 그리드 컨테이너 -->
+      <div class="grid-container" id="grid-container" style="display: none;">
+        <div class="grid-header-bar">
+          <div class="grid-info">
+            <span class="total-count-badge" id="visible-count-text">0개의 페이지</span>
+            <span class="filter-status" id="active-filter-badge">전체 보기</span>
+          </div>
+          <div class="grid-view-controls">
+            <button class="btn btn-xs btn-ghost" id="btn-select-all">전체 선택</button>
+            <button class="btn btn-xs btn-ghost" id="btn-invert-select">선택 반전</button>
+            <button class="btn btn-xs btn-ghost" id="btn-deselect-all">선택 해제</button>
+          </div>
+        </div>
+
+        <div class="page-grid" id="page-grid">
+          <!-- 페이지 카드가 동적으로 렌더링됩니다 -->
+        </div>
+      </div>
+
+      <!-- 선택 항목 플로팅 액션 바 -->
+      <div class="floating-batch-bar" id="floating-batch-bar" style="display: none;">
+        <div class="batch-bar-left">
+          <span class="batch-count" id="selected-count-badge">0개 선택됨</span>
+        </div>
+        <div class="batch-bar-actions">
+          <button class="btn btn-sm btn-ghost" id="btn-batch-rotate">↺ 90도 회전</button>
+          <div class="dropdown dropup" id="batch-group-dropdown">
+            <button class="btn btn-sm btn-ghost dropdown-trigger">📁 그룹 이동 ▼</button>
+            <div class="dropdown-content" id="batch-group-menu">
+              <!-- 그룹 선택 목록 동적 렌더링 -->
+            </div>
+          </div>
+          <button class="btn btn-sm btn-ghost text-danger" id="btn-batch-delete">🗑️ 삭제</button>
+          <button class="btn btn-sm btn-icon" id="btn-batch-close" title="선택 닫기">✕</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 3단 : 우측 설정 및 내보내기 인스펙터 -->
+    <aside class="sidebar-inspector" id="sidebar-inspector">
+      <div class="inspector-scroll">
+        <!-- 1. 문서 메타데이터 설정 -->
+        <section class="inspector-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 class="card-title" style="margin-bottom: 0;">📝 PDF 메타데이터 설정</h3>
+            <button class="btn btn-xs btn-ghost" id="btn-autofill-title" title="첫 번째 파일명으로 문서 제목을 자동 채웁니다">🪄 자동완성</button>
+          </div>
+          <div class="form-group">
+            <label for="meta-title">문서 제목 (Title)</label>
+            <input type="text" id="meta-title" class="form-control" placeholder="예: 2026 수능 대비 기출문제집">
+          </div>
+          <div class="form-group">
+            <label for="meta-author">작성자 / 저자 (Author)</label>
+            <input type="text" id="meta-author" class="form-control" placeholder="예: 편저자 이름">
+          </div>
+          <div class="form-group">
+            <label for="meta-subject">주제 / 과목 (Subject)</label>
+            <input type="text" id="meta-subject" class="form-control" placeholder="예: 수학 영역">
+          </div>
+          <div class="form-group">
+            <label for="meta-keywords">키워드 (쉼표 구분)</label>
+            <input type="text" id="meta-keywords" class="form-control" placeholder="예: 수학, 기출, 수능">
+          </div>
+        </section>
+
+        <!-- 2. 용지 및 표지 규격 설정 -->
+        <section class="inspector-card">
+          <h3 class="card-title">📐 용지 및 레이아웃 설정</h3>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="paper-fit" value="fit_a4" checked>
+              <div class="radio-label">
+                <strong>A4 표준 규격 맞춤 (595 × 842 pt)</strong>
+                <span class="subtext">A4 비율에 맞춰 자동 여백 및 가로/세로 자동 회전 (인쇄/태블릿 필기 권장)</span>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="paper-fit" value="fit_b5">
+              <div class="radio-label">
+                <strong>B5 수험서 규격 맞춤 (499 × 709 pt)</strong>
+                <span class="subtext">시중 문제집, 참고서, 교재 판형에 최적화된 맞춤</span>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="paper-fit" value="fit_letter">
+              <div class="radio-label">
+                <strong>US Letter 규격 맞춤 (612 × 792 pt)</strong>
+                <span class="subtext">북미 표준 레터지 규격에 맞춤</span>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="paper-fit" value="original">
+              <div class="radio-label">
+                <strong>원본 1:1 해상도 유지</strong>
+                <span class="subtext">이미지 원본 픽셀 그대로 페이지 크기 개별 지정</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="cover-fullbleed" checked>
+              <span>첫 페이지(0번 표지) 여백 없이 전면 채우기</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- 3. 최종 내보내기 액션 -->
+        <section class="inspector-card export-card">
+          <h3 class="card-title">🚀 내보내기 & 저장</h3>
+          <p class="export-guide">
+            열람은 되나 삼성노트 등에서 열리지 않던 <strong>보안/권한 제한이 자동으로 제거</strong>된 깨끗한 표준 PDF로 저장됩니다.
+          </p>
+
+          <button class="btn btn-primary btn-block btn-lg" id="btn-export-single">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            <span>통합 PDF로 저장 (보안 해제)</span>
+          </button>
+
+          <button class="btn btn-secondary btn-block" id="btn-export-groups">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 10H6v-2h8v2zm4-4H6v-2h12v2z"/></svg>
+            <span>그룹별 분할 PDF (ZIP 일괄 저장)</span>
+          </button>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 모달 1 : 새 그룹 생성 모달 -->
+  <div class="modal-overlay" id="modal-new-group">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">새 분할 그룹 만들기</h3>
+        <button class="btn-close" id="btn-close-group-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="group-name-input">그룹 이름</label>
+          <input type="text" id="group-name-input" class="form-control" placeholder="예: 1장 본문, 해설편, 부록 등">
+        </div>
+        <div class="form-group">
+          <label>그룹 식별 컬러</label>
+          <div class="color-palette" id="color-palette">
+            <!-- 컬러 버튼들이 렌더링됩니다 -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btn-cancel-group">취소</button>
+        <button class="btn btn-primary" id="btn-confirm-group">생성하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 2 : 이미지 확대 미리보기 모달 -->
+  <div class="modal-overlay modal-zoom" id="modal-zoom">
+    <div class="zoom-box">
+      <button class="btn-close zoom-close" id="btn-close-zoom">✕</button>
+      <div class="zoom-content" id="zoom-content">
+        <!-- 확대된 썸네일/캔버스가 표시됩니다 -->
+      </div>
+      <div class="zoom-footer" id="zoom-footer">
+        <span id="zoom-page-info">페이지 정보</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 3 : 도움말 모달 -->
+  <div class="modal-overlay" id="modal-help">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">💡 PDF Studio 핵심 기능 및 안내</h3>
+        <button class="btn-close" id="btn-close-help">✕</button>
+      </div>
+      <div class="modal-body help-body">
+        <h4>1. 대량 이미지 순서 보정</h4>
+        <p>비동기 로딩 지연으로 인한 순서 꼬임을 원천 차단하며, '1, 2, ... 10'과 같은 자연어 번호 순서로 자동 배치합니다.</p>
+        
+        <h4>2. 삼성노트 호환 보안 해제</h4>
+        <p>열람은 가능하지만 필기나 주석 작성이 차단된 PDF는 불러온 뒤 바로 [통합 PDF 저장]만 누르면 깨끗한 일반 PDF로 변환됩니다.</p>
+        
+        <h4>3. 그룹화 기반 분할</h4>
+        <p>원하는 페이지들을 선택해 그룹을 지정하면, 각 그룹별로 분할된 PDF 여러 개를 ZIP 파일 하나로 일괄 다운로드할 수 있습니다.</p>
+
+        <h4>4. 100% 로컬 보안 원칙</h4>
+        <p>모든 데이터는 사용자 브라우저 내부에서만 처리되며, 어떤 파일도 외부 서버로 전송되지 않습니다.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-ok-help">확인했습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 진행률 표시 프로그레스 토스트 -->
+  <div class="progress-toast" id="progress-toast" style="display: none;">
+    <div class="progress-info">
+      <span class="progress-title" id="progress-title">이미지 불러오는 중...</span>
+      <span class="progress-percent" id="progress-percent">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- 핵심 독립형 라이브러리 로컬 로드 (100% 오프라인) -->
+  <script src="libs/pdf-lib.min.js"></script>
+  <script src="libs/pdf.min.js"></script>
+  <script src="libs/jszip.min.js"></script>
+
+  <!-- 자바스크립트 엔진 및 모듈 로드 -->
+  <script src="js/image-loader.js"></script>
+  <script src="js/pdf-loader.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
