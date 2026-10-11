@@ -1,0 +1,16 @@
+{
+  "name": "PDF Studio",
+  "short_name": "PDF Studio",
+  "description": "100% 브라우저 로컬 구동 PDF 제작 및 스마트 편집 스튜디오",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#12141a",
+  "theme_color": "#1e222d",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📑</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
